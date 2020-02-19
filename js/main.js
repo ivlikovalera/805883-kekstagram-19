@@ -24,7 +24,7 @@ var NAMES = [
 ];
 
 var getRandomInt = function (min, max) {
-  return Math.floor(Math.random() * (max - min)) + min;
+  return Math.round(Math.random() * (max - min)) + min;
 };
 
 var getShuffleArray = function (values) {
@@ -37,6 +37,22 @@ var getShuffleArray = function (values) {
   return values;
 };
 
+var getArrayComments = function (count) {
+  var arrayComments = [];
+  for (var i = 0; i < count; i++) {
+    arrayComments[i] =
+    {
+      avatar: 'img/avatar-' + getRandomInt(1, 6) + '.svg',
+      message: getRandomInt(1, 2) === 2 ?
+        MESSAGES[getRandomInt(0, MESSAGES.length - 1)] + ' ' +
+        MESSAGES[getRandomInt(0, MESSAGES.length - 1)] :
+        MESSAGES[getRandomInt(0, MESSAGES.length - 1)],
+      name: NAMES[getRandomInt(0, NAMES.length - 1)],
+    };
+  }
+  return arrayComments;
+};
+
 var getPhotoMocks = function (count) {
   var photoMocks = [];
   MESSAGES = getShuffleArray(MESSAGES);
@@ -47,14 +63,7 @@ var getPhotoMocks = function (count) {
       url: 'photos/' + getRandomInt(1, 25) + '.jpg',
       description: 'random pic',
       likes: getRandomInt(15, 200),
-      comments: getRandomInt(1, 50),
-      // [
-      //  {
-      //    avatar: 'img/avatar-' + getRandomInt(1, 6) + 'svg',
-      //    message: MESSAGES[getRandomInt(0, MESSAGES.length)],
-      //    name: NAMES[getRandomInt(0, NAMES.length)],
-      //  }
-      // ]
+      comments: getArrayComments(getRandomInt(3, 8)),
     };
   }
   return photoMocks;
@@ -71,17 +80,53 @@ var renderRandomUserPicture = function (picture) {
   randomUserPicture.querySelector('.picture__img').src = picture.url;
   randomUserPicture.querySelector('.picture__img').alt = picture.description;
   randomUserPicture.querySelector('.picture__likes').textContent = picture.likes;
-  randomUserPicture.querySelector('.picture__comments').textContent = picture.comments;
+  randomUserPicture.querySelector('.picture__comments').textContent = picture.comments.length;
   return randomUserPicture;
 };
 
-var makeFiledFragment = function (pictures) {
+var makeFiledFragment = function (elements, render) {
   var fragment = document.createDocumentFragment();
-  for (var i = 0; i < pictures.length; i++) {
-    fragment.appendChild(renderRandomUserPicture(pictures[i]));
+  for (var i = 0; i < elements.length; i++) {
+    fragment.appendChild(render(elements[i]));
   }
   return fragment;
 };
 
-var fragment = makeFiledFragment(getPhotoMocks(PHOTO_COUNT));
+var photoMocks = getPhotoMocks(PHOTO_COUNT);
+var fragment = makeFiledFragment(photoMocks, renderRandomUserPicture);
 picturesContainer.appendChild(fragment);
+
+var bigPicture = document.querySelector('.big-picture');
+bigPicture.classList.remove('hidden');
+var allCommentOfPicture = bigPicture.querySelector('.social__comments');
+var pictureComment = allCommentOfPicture.querySelectorAll('.social__comment');
+var commentNode = pictureComment[0];
+
+for (var j = pictureComment.length - 1; j >= 0; j--) {
+  allCommentOfPicture.removeChild(pictureComment[j]);
+}
+
+var renderRandomComment = function (comment) {
+  var randomComment = commentNode.cloneNode(true);
+  randomComment.querySelector('.social__picture').src = comment.avatar;
+  randomComment.querySelector('.social__picture').alt = comment.name;
+  randomComment.querySelector('.social__text').textContent = comment.message;
+  return randomComment;
+};
+
+var renderBigPicture = function (element) {
+  bigPicture.querySelector('img').src = element.url;
+  bigPicture.querySelector('.likes-count').textContent = element.likes;
+  bigPicture.querySelector('.comments-count').textContent = element.comments.length;
+  bigPicture.querySelector('.social__caption').textContent = element.description;
+  var comments = element.comments;
+  var fragmentOfComment = makeFiledFragment(comments, renderRandomComment);
+  allCommentOfPicture.appendChild(fragmentOfComment);
+};
+
+renderBigPicture(photoMocks[0]);
+
+bigPicture.querySelector('.social__comment-count').classList.add('hidden');
+bigPicture.querySelector('.comments-loader').classList.add('hidden');
+
+document.querySelector('body').classList.add('modal-open');
